@@ -46,6 +46,8 @@ exports.getSpecific = (req, res, next) => {
         })
 }
 
+//create new presentation
+
 exports.createNewPres = (req, res, next) => {
     const pres = new Presentation({
         Title: req.body.Title,
@@ -53,8 +55,75 @@ exports.createNewPres = (req, res, next) => {
         Date_of_Publishment: req.body.Date_of_Publishment,
         slides: req.body.slides,
         _id: new mongoose.Types.ObjectId()
-    });
+    })
 
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+
+    if (!(pres.Date_of_Publishment)) {
+        return res.status(400).json({
+            message: "There is no date"
+        })
+    }
+    let dateString = new Date(pres.Date_of_Publishment).toISOString();
+    dateString = dateString.split('T')[0]
+
+    if (!dateRegex.test(dateString)) {
+        return res.status(400).json({
+            message: "Date_of_Publishment must be in the format yyyy-mm-dd and valid"
+        })
+    }
+
+    const [year, month, day] = dateString.split('-').map(Number);
+    const currentYear = new Date().getFullYear();
+
+    // Validate the year (must be within the last 100 years)
+    if (year < currentYear - 100 || year > currentYear) {
+        return res.status(400).json({
+            message: "Year is not accaptable"
+        });
+    }
+
+    // Validate the month (must be between 1 and 12)
+    if (month < 1 || month > 12) {
+        return res.status(400).json({
+            message: "Month must be between 1 and 12"
+        });
+    }
+
+    // Validate the day (must be within the correct range for the given month)
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) {
+        return res.status(400).json({
+            message: `Day must be between 1 and ${daysInMonth} for the given month`
+        });
+    }
+
+    //checks that i dont get an empty array of slide
+    if (pres.slides.length === 0) {
+        return res.status(400).json({
+            message: "there are no slides in this presentation"
+        })
+    }
+    //checks that i dont get an empty array of authors
+    if (pres.Authors.length === 0) {
+        return res.status(400).json({
+            message: "there are no Authors in this presentation"
+        })
+    }
+
+    //check if i the json is in the right format and the slides has header and content
+    for (let slide of pres.slides) {
+        if (!slide.header) {
+            return res.status(400).json({
+                message: "Each slide must contain a 'header'"
+            });
+        }
+        if (!slide.content) {
+            return res.status(400).json({
+                message: "Each slide must contain 'content'"
+            });
+        }
+    }
     pres.save()
         .then(result => {
             console.log(result);
@@ -67,7 +136,6 @@ exports.createNewPres = (req, res, next) => {
             if (err.code === 11000) {
                 return res.status(409).json({
                     message: "This title already exists",
-                    // error: err
                 });
             }
             return res.status(500).json({
@@ -75,76 +143,4 @@ exports.createNewPres = (req, res, next) => {
                 error: err
             })
         })
-}
-// changing the list of the authors in the presentation 
-exports.changeAuthors = async (req, res, next) => {
-    const updateAuthList = async (title, newAuthList) => {
-        try {
-            const presentation = await Presentation.findOne({ Title: title })
-            if (!presentation) {
-                return res.status(404).json({
-                    message: "Presentation not found"
-                })
-            }
-            const updateList = await Presentation.findByIdAndUpdate(presentation._id, { Authors: newAuthList }, { new: true })
-            console.log(updateList, "List updated");
-            return res.status(200).json({
-                message: "Authors list updated successfully",
-                //updatedPresentation: updateList
-            })
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({
-                message: "An error occurred",
-                error: err
-            })
-        }
-    }
-
-    await updateAuthList(req.body.Title, req.body.Authors)
-}
-
-//adding slide to the presentation
-//the body of the reques has the presentation title the text in the slide and its 
-exports.addSlide = async (req, res, next) => {
-    try {
-        const result = await Presentation.findOne({ Title: req.body.Title }).exec()
-        var arr = result.slides
-        arr.splice(req.body.index - 1, 0, req.body.slide)
-        const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: arr }, { new: true })
-        console.log(updateSlides, "updated successfully")
-
-        return res.status(200).json({
-            message: "Slide added successfully "
-        })
-    } catch (err) {
-
-        console.error(err);
-        return res.status(500).json({
-            message: "An error occurred",
-            error: err
-        })
-    }
-}
-
-exports.modifySlide = async (req, res, next) => {
-    try {
-        const result = await Presentation.findOne({ Title: req.body.Title }).exec()
-        var arr = result.slides
-        arr[req.body.index] = req.body.slide
-        const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: arr }, { new: true })
-        console.log(updateSlides, "updated successfully")
-
-        return res.status(200).json({
-            message: "Slide added successfully "
-        })
-    }
-    catch (err) {
-
-        console.error(err);
-        return res.status(500).json({
-            message: "An error occurred",
-            error: err
-        })
-    }
 }

@@ -71,7 +71,7 @@ In this case the presentation's title and the fixed authors list should be sent 
 Editing slides is also an option we can add a slide using a
 PATCH HTTP request to : http://localhost:3000/presentation/new/slide
 
-In this case the user will have to send the new slide in the format of the schema listed above and the index of which place in the presentation the new slide suppose to be.
+In this case the user will have to send the new slide in the format of the schema listed above and the index of which place in the presentation the new slide suppose to be if the index is lesser then one an error will ouccur but if the index is higher then the amount of the existing slides it will add it to the back no matter the amount of slides.
 
 We can also modify a slide from the presentation by using a
 PATCH HTTP request to : http://localhost:3000/presentation/modify/slide
