@@ -13,15 +13,15 @@ exports.changeAuthors = async (req, res, next) => {
                     message: "Presentation not found"
                 })
             }
+
             let action = req.body.action
             let authors = req.body.authors
             let arr = presentation.Authors
-            console.log(action)
-            console.log(authors)
 
-            if (!action || !(authors instanceof Array) || !(authors)) {
+
+            if (!action || !(Array.isArray(authors)) || !(authors)) {
                 return res.status(400).json({
-                    message: "not the right format"
+                    message: "Invalid input format or empty author list"
                 })
             }
 
@@ -36,36 +36,36 @@ exports.changeAuthors = async (req, res, next) => {
                     message: "No such action"
                 })
             }
-            else {
-                if (action === 'add') {
+
+            switch (action) {
+                case ('add'):
                     arr = arr.concat(newAuthList)
                     arr = [...new Set(arr)]
-                }
-                if (action === 'delete') {
-                    console.log("hey")
+                    break
+                case ('delete'):
                     newAuthList.forEach(element => {
                         if (arr.includes(element)) {
+                            arr = arr.filter(a => a !== element)
                             const index = arr.indexOf(element)
                             arr.splice(index, 1)
+                            if (arr.length === 0) {
+                                return res.status(400).json({
+                                    message: "cant delete all the authors"
+                                })
+                            }
                         }
                         else {
                             return res.status(400).json({
                                 message: "There is no " + element + "in the authors list"
                             })
                         }
+                    })
 
-                    });
-                }
-                if (action === 'replace')
+                    break
+                case ('replace'):
                     arr = newAuthList
-
+                    break
             }
-            if (arr.length === 0) {
-                return res.status(400).json({
-                    message: "cant delete all the authors"
-                })
-            }
-
             const updateList = await Presentation.findByIdAndUpdate(presentation._id, { Authors: arr }, { new: true })
             console.log(updateList, "List updated");
             return res.status(200).json({
@@ -76,7 +76,6 @@ exports.changeAuthors = async (req, res, next) => {
             //console.error(err);
             return res.status(500).json({
                 message: "An error occurred",
-                error: err
             })
         }
     }
@@ -85,7 +84,7 @@ exports.changeAuthors = async (req, res, next) => {
 }
 
 //adding slide to the presentation
-//the body of the reques has the presentation title the text in the slide and its 
+//the body of the request has the presentation title the text in the slide and its 
 exports.addSlide = async (req, res, next) => {
     try {
         const result = await Presentation.findOne({ Title: req.body.Title }).exec()
@@ -99,31 +98,49 @@ exports.addSlide = async (req, res, next) => {
         const index = req.body.index
 
         //checks the format
-        if (!slide.header) {
+        if (!slide.header || !slide.content || typeof slide.content !== 'string') {
+            return handleError(res, 400, "Invalid slide format");
+        }
+
+        // if (!slide.header) {
+        //     return res.status(400).json({
+        //         message: "Each slide must contain a 'header'"
+        //     });
+        // }
+        // if (!slide.content) {
+        //     return res.status(400).json({
+        //         message: "Each slide must contain 'content'"
+        //     });
+        // }
+        // if (!(typeof slide.content === 'string')) {
+        //     console.log(typeof slide.content)
+        //     return res.status(400).json({
+        //         message: "content must be string"
+        //     })
+        // }
+
+        if (!index) {
             return res.status(400).json({
-                message: "Each slide must contain a 'header'"
+                message: "You have to specify index"
             });
         }
-        if (!slide.content) {
+
+        if (index < 1 || index > arr.length + 1) {
             return res.status(400).json({
-                message: "Each slide must contain 'content'"
+                message: "Your index is out of range"
             });
         }
-        if (index < 1) {
-            return res.status(400).json({
-                message: "index cant be less than 1"
-            });
-        }
+
         arr.splice(index - 1, 0, slide)
-        console.log(arr.length)
 
         const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: arr }, { new: true })
-        console.log(updateSlides, "updated successfully")
 
         return res.status(200).json({
             message: "Slide added successfully "
         })
-    } catch (err) {
+    }
+
+    catch (err) {
 
         console.error(err);
         return res.status(500).json({
@@ -141,29 +158,38 @@ exports.modifySlide = async (req, res, next) => {
                 message: "There is no presentation with the provided title",
             })
         }
-        let arr = result.slides
-        const slide = req.body.slide
+
+        let slidesArray = result.slides
+        const newPhotos = req.photos
+        const newText = req.text
+        const newHeader = req.header
         const index = req.body.index
 
-        //checks the format
-        if (!slide.header) {
-            return res.status(400).json({
-                message: "Each slide must contain a 'header'"
-            });
-        }
-        if (!slide.content) {
-            return res.status(400).json({
-                message: "Each slide must contain 'content'"
-            });
-        }
         if (index < 1 || index > arr.length) {
             return res.status(400).json({
                 message: "there is no slides in this index"
             });
         }
 
-        arr[index - 1] = slide
-        const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: arr }, { new: true })
+        slide = slidesArray[index - 1]
+
+        if (newHeader && typeof newHeader === 'string') {
+            slide.header = newHeader
+        }
+
+        if (newText && typeof newText === 'string') {
+            slide.content = newText
+        }
+
+        if (newPhotos && Array.isArray(newPhotos)) {
+            if (newPhotos.length !== 0) {
+                let arr = slide.photos.concat(newPhotos)
+                arr = [...new Set(arr)]
+                slide.photos = arr
+            }
+        }
+        slidesArray[index - 1] = slide
+        const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: slidesArray }, { new: true })
         console.log(updateSlides, "updated successfully")
 
         return res.status(200).json({

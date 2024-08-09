@@ -21,7 +21,15 @@ exports.deletePres = (req, res, next) => {
 exports.deleteSlide = async (req, res, next) => {
     try {
         const result = await Presentation.findOne({ Title: req.body.Title }).exec()
-        var arr = result.slides
+        let arr = result.slides
+        const index = req.body.index
+
+        if (index < 1 || index > arr.length || !index) {
+            return res.status(400).json({
+                message: "Your index was out of range or not provided"
+            });
+        }
+
         arr.splice(req.body.index - 1, 1)
         const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: arr }, { new: true })
         console.log(updateSlides, "removed successfully")
