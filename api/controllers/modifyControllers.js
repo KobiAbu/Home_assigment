@@ -160,12 +160,12 @@ exports.modifySlide = async (req, res, next) => {
         }
 
         let slidesArray = result.slides
-        const newPhotos = req.photos
-        const newText = req.text
-        const newHeader = req.header
+        const newPhotos = req.body.photos
+        const newText = req.body.text
+        const newHeader = req.body.header
         const index = req.body.index
 
-        if (index < 1 || index > arr.length) {
+        if (index < 1 || index > slidesArray.length) {
             return res.status(400).json({
                 message: "there is no slides in this index"
             });
@@ -182,15 +182,22 @@ exports.modifySlide = async (req, res, next) => {
         }
 
         if (newPhotos && Array.isArray(newPhotos)) {
+
+
             if (newPhotos.length !== 0) {
-                let arr = slide.photos.concat(newPhotos)
+                let arr = slide.photos_url.concat(newPhotos)
                 arr = [...new Set(arr)]
-                slide.photos = arr
+                slide.photos_url = arr
             }
         }
         slidesArray[index - 1] = slide
+        if (!newHeader && !newPhotos && !newText) {
+            return res.status(400).json({
+                message: "You have to choose a field to change"
+            });
+        }
         const updateSlides = await Presentation.findByIdAndUpdate(result._id, { slides: slidesArray }, { new: true })
-        console.log(updateSlides, "updated successfully")
+        // console.log(updateSlides, "updated successfully")
 
         return res.status(200).json({
             message: "Slide altered successfully "
