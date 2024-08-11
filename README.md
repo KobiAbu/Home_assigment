@@ -99,7 +99,7 @@ We can delete an individual slide or an entire presentation. To delete an entire
 
 In the link, you will have to replace the "title" parameter with the actual title of the presentation that they are looking for.
 
-Finally, we can also delete an individual slide by using a DELETE HTTP request to: `http://localhost:3000/presentation/delete/slide`
+Finally, we can also delete an individual slide by using a DELETE HTTP request to: `http://localhost:3000/presentation/deleteAslide`
 
 In this case, the user will need to send a JSON with the title of the presentation and the index of the requested slide.
 

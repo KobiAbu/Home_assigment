@@ -2,7 +2,7 @@ const Presentation = require('../models/presentationModel')
 const mongoose = require('mongoose')
 
 
-// Function to update the authors list in a presentation 
+// Function to update the authors list in a presentation s
 
 exports.changeAuthors = async (req, res, next) => {
     // Internal function to update the authors list
@@ -49,23 +49,14 @@ exports.changeAuthors = async (req, res, next) => {
                     break
                 case ('delete'):
                     // Delete specified authors, ensure no complete deletion
-                    newAuthList.forEach(element => {
-                        if (arr.includes(element)) {
-                            arr = arr.filter(a => a !== element)
-                            const index = arr.indexOf(element)
-                            arr.splice(index, 1)
-                            if (arr.length === 0) {
-                                return res.status(400).json({
-                                    message: "cant delete all the authors"
-                                })
-                            }
-                        }
-                        else {
-                            return res.status(400).json({
-                                message: "There is no " + element + "in the authors list"
-                            })
-                        }
-                    })
+                    if (newAuthList.some(author => !arr.includes(author))) {
+                        return res.status(400).json({ message: "One or more authors do not exist in the current list" });
+                    }
+                    arr = arr.filter(author => !newAuthList.includes(author));
+                    if (arr.length === 0) {
+                        return res.status(400).json({ message: "Cannot delete all the authors" });
+                    }
+                    break
 
                     break
                 case ('replace'):
@@ -75,7 +66,6 @@ exports.changeAuthors = async (req, res, next) => {
             }
             // Update the presentation with the new authors list
             const updateList = await Presentation.findByIdAndUpdate(presentation._id, { Authors: arr }, { new: true })
-            console.log(updateList, "List updated");
             return res.status(200).json({
                 message: "Authors list updated successfully",
                 //updatedPresentation: updateList
@@ -108,8 +98,11 @@ exports.addSlide = async (req, res, next) => {
 
 
         //Validate the format
-        if (!slide.header || !slide.content || typeof slide.content !== 'string') {
-            return handleError(res, 400, "Invalid slide format");
+        if (!slide.header || typeof slide.header !== 'string' || !slide.content || typeof slide.content !== 'string') {
+            return res.status(400).json({
+                message: "Wrong format"
+            })
+
         }
         // Ensure an index is provided
         if (!index) {
@@ -119,9 +112,9 @@ exports.addSlide = async (req, res, next) => {
         }
 
         // Validate the index range
-        if (index < 1 || index > arr.length + 1) {
+        if (index < 1 || index > arr.length + 1 || !index) {
             return res.status(400).json({
-                message: "Your index is out of range"
+                message: "Your index is out of range or index not provided"
             });
         }
         // Insert the new slide at the specified index
@@ -135,12 +128,12 @@ exports.addSlide = async (req, res, next) => {
         })
     }
 
-    catch (err) {
+    catch {
 
-        console.error(err);
+        // console.error(err);
         return res.status(500).json({
             message: "An error occurred",
-            error: err
+            // error: err
         })
     }
 }
@@ -163,31 +156,41 @@ exports.modifySlide = async (req, res, next) => {
         const index = req.body.index; // Get the slide index to modify
 
         // Validate the slide index range
-        if (index < 1 || index > slidesArray.length) {
+        if (index < 1 || index > slidesArray.length || !index) {
             return res.status(400).json({
-                message: "there is no slides in this index"
-            });
+                message: "there is no slides in this index or index not provided"
+            })
         }
 
         //Get the slide that needed to be edited
         slide = slidesArray[index - 1]
+        //Validate the format
+        if ((newHeader && typeof newHeader !== 'string') || (newText && typeof newText !== 'string')
+            || (newPhotos && !(Array.isArray(newPhotos)))) {
+            return res.status(400).json({
+                message: "Wrong format"
+            })
+        }
 
         // Update the slide header if provided
-        if (newHeader && typeof newHeader === 'string') {
+        if (newHeader) {
             slide.header = newHeader
         }
 
         // Update the slide content if provided
-        if (newText && typeof newText === 'string') {
+        if (newText) {
             slide.content = newText
         }
 
         // Update the slide photos if provided and valid and remove duplicates
-        if (newPhotos && Array.isArray(newPhotos)) {
+        if (newPhotos) {
             if (newPhotos.length !== 0) {
                 let arr = slide.photos_url.concat(newPhotos)
                 arr = [...new Set(arr)]
                 slide.photos_url = arr
+            }
+            else {
+                slide.photos_url = []
             }
         }
         // Save the modified slide back into the array

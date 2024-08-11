@@ -24,5 +24,5 @@ router.patch('/modify/slide', modifyControllers.modifySlide)
 // delete specific presentation - giving the title as parameter
 router.delete('/delete/:title', deletController.deletePres)
 //delete specific slides 
-router.delete('/delete/slide', deletController.deleteSlide)
+router.delete('/deleteAslide', deletController.deleteSlide)
 module.exports = router
