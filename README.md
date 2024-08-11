@@ -1,7 +1,7 @@
 <h3 align="center">RESTful API - Presentation Home Assignment</h3>
 About The Project
 
-This project is basically a RESTful API with MongoDB with a few functions which include:
+This project is a RESTful API with MongoDB with a few functions (CRUD) which include:
 
 * Reading and writing presentations using calls to the API 
 * Changing and modifying article's details and even individual slides 
@@ -19,7 +19,7 @@ This project uses Mongo's online interface and Mongoose's API and built-in funct
 <br/>
 <h3><u>Schema</u></h3>
 
-In the database, we have 2 schemas:
+The API uses two primary schemas:
 * Presentation's schema
 * Slide's schema
 
@@ -27,6 +27,9 @@ The Presentation schema is built from an ID (Mongo's) and a unique title, an arr
 All of the fields are mandatory.
 
 The Slide schema is built from 2 mandatory fields: the header (title) and the content. It also has an optional field, which is a string array called 'photos' where you can store the URLs of all the photos in your slide.
+
+<h3><u>API Endpoints</u></h3>
+To start the server, run npm start in the terminal. The server will be accessible at localhost:3000. You may have to install the relevant dependencies before starting.
 
 <h3><u>Functions</u></h3>
 
@@ -41,14 +44,14 @@ The user can read all the presentations from our API using a GET HTTP request to
 The user can also read a particular presentation from our API using a GET HTTP request to: 
 `http://localhost:3000/presentation/get/:title`
 
-In the link, you will have to replace the "title" parameter with the actual title of the presentation that they are looking for.
+In the link, you will have to replace the "title" parameter with the actual title of the presentation that you are looking for.
 
 <h4><u>Writing</u></h4>
 The user can create a new presentation using a POST HTTP request to:
 
 `http://localhost:3000/presentation/new`
 
-In this request, the user is required to send a JSON with the request which contains:
+In the body of the request, the user is required to send a JSON with the request which contains:
 "Title" string, "slides" array of type slide by its schema, "Authors" array, and "Date_of_Publishment" string in the format of "YYYY-MM-DD".
 
 <h5><u>Example :</u></h5>
@@ -62,14 +65,14 @@ In this request, the user is required to send a JSON with the request which cont
 }
 ```
 
-If the user tries to add a presentation with a title that already exists, they will get an error. Also, if the user tries to add a date that is not possible or not in the right format, it will send a custom error. The API will also check that the authors' list and the slides list are not empty and that all the slides are in the right format.
+Validation checks ensure that the title is unique, the date is correctly formatted, and the lists of authors and slides are not empty, if so a custom error would be returned
 
 The user can also modify the presentation's authors list by using a PATCH HTTP request to: `http://localhost:3000/presentation/modify/authors`
 
 In this case, the presentation's title, list of authors, and an 'action' string are required, which can be either:
-* 'replace' to fully replace the authors list with the given list
-* 'delete' to delete the authors that are given inside the new list from the list of authors (if one of the names is not in the original authors list, then the entire request will be denied, and also if the user tries to delete all of the authors in the list)
-* 'add' which will add the new authors to the existing list of authors 
+* 'replace'- to fully replace the authors list with the given list
+* 'delete'- to delete the authors that are given inside the new list from the list of authors (if one of the names is not in the original authors list, then the entire request will be denied, and also if the user tries to delete all of the authors in the list)
+* 'add'- which will add the new authors to the existing list of authors 
 
 Editing slides is also an option. We can add a slide using a PATCH HTTP request to: `http://localhost:3000/presentation/new/slide`
 
