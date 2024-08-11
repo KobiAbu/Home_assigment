@@ -1,20 +1,13 @@
 const Presentation = require('../models/presentationModel')
 const mongoose = require('mongoose')
 
-const slideSchema = new mongoose.Schema({
-    slideNumber: Number,
-    content: String,
-});
-
-
-// get all the data
+// Function to retrieve all presentations
 exports.presGetAll = (req, res, next) => {
     Presentation.find().exec().then(pres => {
-        console.log(pres)
+        // Send a successful response with all the presentations
         res.status(200).json(pres)
     })
         .catch(err => {
-            console.error(err)
             res.status(500).json({
                 error: err
             })
@@ -22,23 +15,19 @@ exports.presGetAll = (req, res, next) => {
         })
 }
 
-//get specific title
-
+// Function to retrieve a specific presentation by title
 exports.getSpecific = (req, res, next) => {
     Presentation.findOne({ Title: req.params['title'] }).exec()
         .then(result => {
             if (!result) {
-                const new_err = "There is no presentation with the provided Title"
-                console.log(new_err)
                 return res.status(404).json({
-                    error: new_err
+                    error: "There is no presentation with the provided Title"
                 })
             }
             console.log(result);
             res.status(200).json(result)
         })
         .catch(err => {
-            console.error(err)
             res.status(500).json({
                 error: "An error occurred",
                 details: err
@@ -46,9 +35,9 @@ exports.getSpecific = (req, res, next) => {
         })
 }
 
-//create new presentation
-
+// Function to create a new presentation
 exports.createNewPres = (req, res, next) => {
+    // Create a new presentation object using the request body data
     const pres = new Presentation({
         Title: req.body.Title,
         Authors: req.body.Authors,
@@ -56,23 +45,26 @@ exports.createNewPres = (req, res, next) => {
         slides: req.body.slides,
         _id: new mongoose.Types.ObjectId()
     })
-
+    // Regex to validate the date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/
 
+    // Check if the publication date is provided
     if (!(pres.Date_of_Publishment)) {
         return res.status(400).json({
             message: "There is no date"
         })
     }
-    let dateString = new Date(pres.Date_of_Publishment).toISOString();
+    // Convert the date to a standardized ISO string and remove the time portion
+    let dateString = new Date(pres.Date_of_Publishment).toISOString()
     dateString = dateString.split('T')[0]
 
+     // Validate the date format using the regex
     if (!dateRegex.test(dateString)) {
         return res.status(400).json({
             message: "Date_of_Publishment must be in the format yyyy-mm-dd and valid"
         })
     }
-
+    // Extract year, month, and day
     const [year, month, day] = dateString.split('-').map(Number);
     const currentYear = new Date().getFullYear();
 
@@ -98,20 +90,21 @@ exports.createNewPres = (req, res, next) => {
         });
     }
 
-    //checks that i dont get an empty array of slide
+    // Check that the slides array is not empty
     if (pres.slides.length === 0) {
         return res.status(400).json({
             message: "there are no slides in this presentation"
         })
     }
-    //checks that i dont get an empty array of authors
+
+    // Check that the authors array is not empty
     if (pres.Authors.length === 0) {
         return res.status(400).json({
             message: "there are no Authors in this presentation"
         })
     }
 
-    //check if i the json is in the right format and the slides has header and content
+    // Validate each slide to ensure it contains a header and content
     for (let slide of pres.slides) {
         if (!slide.header) {
             return res.status(400).json({
@@ -124,6 +117,7 @@ exports.createNewPres = (req, res, next) => {
             });
         }
     }
+    // Save the new presentation to the database
     pres.save()
         .then(result => {
             console.log(result);
